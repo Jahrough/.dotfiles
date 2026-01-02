@@ -9,18 +9,16 @@ umask 022
 #   - Establish trusted execution baseline
 #   - Install minimal prerequisites (brew + task)
 #   - Clone dotfiles repository
-#   - Hand off to Task (Phase 1)
-#
-# Security Guarantees:
-#   - macOS only
-#   - Minimal privileges
-#   - Defensive checks
-#   - Explicit failure modes
+#   - Verify installer via Cosign
+#   - Hand off to Phase 1 (Task workflows)
 # =============================================================================
 
 # ---- Readonly Constants ------------------------------------------------------
 readonly DOTFILES_ROOT="${DOTFILES_ROOT:-$HOME/.dotfiles}"
 readonly DOTFILES_REPO="https://github.com/Jahrough/.dotfiles.git"
+readonly INSTALLER_URL="https://raw.githubusercontent.com/Jahrough/.dotfiles/main/install.sh"
+readonly COSIGN_CERT_IDENTITY="https://github.com/Jahrough"
+readonly COSIGN_OIDC_ISSUER="https://token.actions.githubusercontent.com"
 readonly REQUIRED_CMDS=(bash curl git uname)
 
 # ---- Logging ----------------------------------------------------------------
@@ -43,6 +41,23 @@ done
 if ! curl -fsSL --head https://github.com >/dev/null; then
   die "Network access to github.com is required"
 fi
+
+# ---- Cosign Verification ----------------------------------------------------
+if ! command -v cosign >/dev/null 2>&1; then
+  log "Installing cosign..."
+  brew install sigstore/tap/cosign
+fi
+
+log "Downloading installer for verification..."
+curl -fsSL "$INSTALLER_URL" -o install.sh
+
+log "Verifying installer signature with Cosign..."
+cosign verify-blob install.sh \
+  --certificate-identity "$COSIGN_CERT_IDENTITY" \
+  --certificate-oidc-issuer "$COSIGN_OIDC_ISSUER" \
+  || die "Cosign verification failed! Aborting bootstrap."
+
+log "Installer verified successfully ✅"
 
 # ---- Xcode Command Line Tools ------------------------------------------------
 if ! xcode-select -p >/dev/null 2>&1; then
