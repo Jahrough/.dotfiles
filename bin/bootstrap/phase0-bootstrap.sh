@@ -42,23 +42,6 @@ if ! curl -fsSL --head https://github.com >/dev/null; then
   die "Network access to github.com is required"
 fi
 
-# ---- Cosign Verification ----------------------------------------------------
-if ! command -v cosign >/dev/null 2>&1; then
-  log "Installing cosign..."
-  brew install sigstore/tap/cosign
-fi
-
-log "Downloading installer for verification..."
-curl -fsSL "$INSTALLER_URL" -o install.sh
-
-log "Verifying installer signature with Cosign..."
-cosign verify-blob install.sh \
-  --certificate-identity "$COSIGN_CERT_IDENTITY" \
-  --certificate-oidc-issuer "$COSIGN_OIDC_ISSUER" \
-  || die "Cosign verification failed! Aborting bootstrap."
-
-log "Installer verified successfully ✅"
-
 # ---- Xcode Command Line Tools ------------------------------------------------
 if ! xcode-select -p >/dev/null 2>&1; then
   log "Installing Xcode Command Line Tools..."
@@ -87,6 +70,23 @@ else
 fi
 
 command -v brew >/dev/null 2>&1 || die "brew command unavailable"
+
+# ---- Cosign Verification ----------------------------------------------------
+if ! command -v cosign >/dev/null 2>&1; then
+  log "Installing cosign..."
+  brew install sigstore/tap/cosign
+fi
+
+log "Downloading installer for verification..."
+curl -fsSL "$INSTALLER_URL" -o install.sh
+
+log "Verifying installer signature with Cosign..."
+cosign verify-blob install.sh \
+  --certificate-identity "$COSIGN_CERT_IDENTITY" \
+  --certificate-oidc-issuer "$COSIGN_OIDC_ISSUER" \
+  || die "Cosign verification failed! Aborting bootstrap."
+
+log "Installer verified successfully ✅"
 
 # ---- Install go-task ---------------------------------------------------------
 if ! command -v task >/dev/null 2>&1; then
