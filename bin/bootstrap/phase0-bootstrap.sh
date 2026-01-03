@@ -89,11 +89,13 @@ OS="$(uname -s)"
 for cmd in "${REQUIRED_CMDS[@]}"; do
   command -v "$cmd" >/dev/null 2>&1 || die "Required command not found: $cmd"
 done
+success "Environment validation passed (macOS + required commands)"
 
 # ---- Network Check -----------------------------------------------------------
 if ! curl -fsSL --head https://github.com >/dev/null; then
   die "Network access to github.com is required"
 fi
+success "Network connectivity verified"
 
 # ---- Xcode Command Line Tools ------------------------------------------------
 if ! xcode-select -p >/dev/null 2>&1; then
@@ -105,6 +107,7 @@ if ! xcode-select -p >/dev/null 2>&1; then
     sleep 5
   done
 fi
+success "Xcode Command Line Tools installed"
 
 # ---- Homebrew Installation --------------------------------------------------
 if ! command -v brew >/dev/null 2>&1; then
@@ -123,12 +126,14 @@ else
 fi
 
 command -v brew >/dev/null 2>&1 || die "brew command unavailable"
+success "Homebrew installed and available"
 
 # ---- Cosign Verification ----------------------------------------------------
 if ! command -v cosign >/dev/null 2>&1; then
   log "Installing cosign..."
   brew install sigstore/tap/cosign
 fi
+success "Cosign available"
 
 log "Downloading installer for verification..."
 curl -fsSL "$INSTALLER_URL" -o install.sh
@@ -139,7 +144,7 @@ cosign verify-blob install.sh \
   --certificate-oidc-issuer "$COSIGN_OIDC_ISSUER" \
   || die "Cosign verification failed! Aborting bootstrap."
 
-log "Installer verified successfully ✅"
+success "Installer verified via Cosign"
 
 # ---- Install go-task ---------------------------------------------------------
 if ! command -v task >/dev/null 2>&1; then
@@ -148,11 +153,13 @@ if ! command -v task >/dev/null 2>&1; then
 fi
 
 command -v task >/dev/null 2>&1 || die "task installation failed"
+success "go-task installed"
 
 # ---- Clone Dotfiles Repository ----------------------------------------------
 if [[ ! -d "$DOTFILES_ROOT" ]]; then
   log "Cloning dotfiles repository into $DOTFILES_ROOT"
   git clone --depth=1 "$DOTFILES_REPO" "$DOTFILES_ROOT"
+  success "Dotfiles repository cloned"
 else
   warn "Dotfiles directory already exists: $DOTFILES_ROOT"
 fi
@@ -165,7 +172,8 @@ cd "$DOTFILES_ROOT"
 if ! task -l >/dev/null 2>&1; then
   die "Taskfile exists but failed validation"
 fi
+success "Dotfiles repository validated"
 
 # ---- Handoff to Phase 1 ------------------------------------------------------
-log "Phase 0 complete. Handing off to Phase 1 (task init)..."
+success "Phase 0 complete. Handing off to Phase 1 (task init)…"
 exec task init
