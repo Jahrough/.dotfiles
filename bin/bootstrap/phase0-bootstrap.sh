@@ -1,6 +1,20 @@
 #!/usr/bin/env bash
+
+# ------------------------------------------------------------------------------
+# Bash strict mode & execution environment
+# ------------------------------------------------------------------------------
+
+# Exit immediately on:
+#  -E  : trap ERR in functions/subshells
+#  -e  : any non-zero exit
+#  -u  : unset variables
+#  -o pipefail : pipeline failure propagation
 set -Eeuo pipefail
+
+# Safer word splitting
 IFS=$'\n\t'
+
+# Default file permissions: rw-r--r--
 umask 022
 
 # =============================================================================
