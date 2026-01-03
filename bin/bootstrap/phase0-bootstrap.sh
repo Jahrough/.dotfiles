@@ -21,10 +21,63 @@ readonly COSIGN_CERT_IDENTITY="https://github.com/Jahrough"
 readonly COSIGN_OIDC_ISSUER="https://token.actions.githubusercontent.com"
 readonly REQUIRED_CMDS=(bash curl git uname)
 
-# ---- Logging ----------------------------------------------------------------
-log()  { printf "🔹 %s\n" "$*"; }
-warn() { printf "⚠️  %s\n" "$*" >&2; }
-die()  { printf "❌ %s\n" "$*" >&2; exit 1; }
+# -----------------------------------------------------------------------------
+# Terminal Capability & Colors
+# -----------------------------------------------------------------------------
+
+# Detect if stdout is a TTY
+readonly IS_TTY=$([[ -t 1 ]] && echo 1 || echo 0)
+
+# Enable colors only when supported
+if [[ $IS_TTY -eq 1 ]] && command -v tput &>/dev/null; then
+  C_RESET="$(tput sgr0)"
+  C_RED="$(tput setaf 1)"
+  C_GREEN="$(tput setaf 2)"
+  C_YELLOW="$(tput setaf 3)"
+  C_BLUE="$(tput setaf 4)"
+else
+  C_RESET='' C_RED='' C_GREEN='' C_YELLOW='' C_BLUE=''
+fi
+
+# -----------------------------------------------------------------------------
+# Logging Helpers
+# -----------------------------------------------------------------------------
+
+# Timestamp formatter
+_timestamp() { date +"%Y-%m-%d %H:%M:%S"; }
+
+# Append to internal operations log
+_log() { OPERATIONS_LOG+=("$1: $2"); }
+
+# Informational log
+log() {
+  [[ "$LOG_LEVEL" =~ ^(INFO|DEBUG)$ ]] || return
+  printf "%s🔹 [INFO  %s]%s %s\n" "$C_BLUE" "$(_timestamp)" "$C_RESET" "$*"
+  _log INFO "$*"
+}
+
+# Success log
+success() {
+  printf "%s✅ [OK    %s]%s %s\n" "$C_GREEN" "$(_timestamp)" "$C_RESET" "$*"
+  _log OK "$*"
+}
+
+# Warning log (stderr)
+warn() {
+  printf "%s⚠️  [WARN  %s]%s %s\n" "$C_YELLOW" "$(_timestamp)" "$C_RESET" "$*" >&2
+}
+
+# Error log (stderr)
+error() {
+  printf "%s❌ [ERROR %s]%s %s\n" "$C_RED" "$(_timestamp)" "$C_RESET" "$*" >&2
+}
+
+# Fatal error helper
+die() {
+  local code="$1"; shift
+  error "$*"
+  exit "$code"
+}
 
 # ---- Trap for unexpected failures -------------------------------------------
 trap 'die "Bootstrap failed at line $LINENO"' ERR
