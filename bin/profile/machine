@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# =============================================================================
+# lib/machine-profile.sh
+# =============================================================================
+# Purpose:
+#   - Apply machine-specific chezmoi templates based on hostname
+#   - Log actions to both console and file
+#   - Respect DRY_RUN and VERBOSE flags
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Environment & Logging
+# -----------------------------------------------------------------------------
+: "${XDG_STATE_HOME:=$HOME/.local/state}"
+readonly LOG_DIR="$XDG_STATE_HOME/logs"
+mkdir -p "$LOG_DIR"
+readonly LOG_FILE="$LOG_DIR/machine-profile.log"
+
+source "$DOTFILES_ROOT/lib/log.sh"
+source "$DOTFILES_ROOT/lib/run.sh"
+
+# -----------------------------------------------------------------------------
+# Host detection
+# -----------------------------------------------------------------------------
+host=$(hostname | tr '[:upper:]' '[:lower:]' | cut -d'.' -f1)
+log "🔧 Detected machine hostname: $host"
+
+# -----------------------------------------------------------------------------
+# Apply machine-specific chezmoi template
+# -----------------------------------------------------------------------------
+apply_machine_template() {
+    if chezmoi diff --include "$host" >/dev/null 2>&1; then
+        log "📦 Applying machine-specific template for $host..."
+        run "Apply machine-specific template for $host" chezmoi apply --include "$host"
+    else
+        log_warn "ℹ️ No machine-specific template found for $host, skipping"
+    fi
+}
+
+apply_machine_template

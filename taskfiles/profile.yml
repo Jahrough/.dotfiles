@@ -1,0 +1,12 @@
+version: '3'
+
+# =============================================================================
+# Machine / Profile
+# =============================================================================
+
+tasks:
+
+  machine-profile:apply:
+    desc: "🖥 Apply machine-specific configuration"
+    cmds:
+      - bash "{{.DOTFILES_BIN}}/profile/machine" "{{.profile}}"

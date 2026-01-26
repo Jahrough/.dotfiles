@@ -1,0 +1,67 @@
+# Enable Powerlevel10k instant prompt. Should stay close to the top of ~/.config/zsh/.zshrc.
+# Initialization code that may require console input (password prompts, [y/n]
+# confirmations, etc.) must go above this block; everything else may go below.
+if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
+  source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
+fi
+
+# =============================================================================
+# ~/.config/zsh/.zshrc — Minimal Bootstrap
+# -----------------------------------------------------------------------------
+# Responsibilities:
+# - Powerlevel10k instant prompt
+# - Load configuration fragments (conf.d)
+# - Load language/runtime modules (plugins)
+# - Load local customizations (optional)
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Interactive shell only
+# -----------------------------------------------------------------------------
+[[ -o interactive ]] || return
+
+# -----------------------------------------------------------------------------
+# Powerlevel10k Instant Prompt (must be first)
+# -----------------------------------------------------------------------------
+typeset -g POWERLEVEL9K_INSTANT_PROMPT=quiet
+local p10k_instant_prompt="${XDG_CACHE_HOME}/p10k-instant-prompt-${(%):-%n}.zsh"
+[[ -r "$p10k_instant_prompt" ]] && source "$p10k_instant_prompt"
+
+# -----------------------------------------------------------------------------
+# Idempotent prompt guard
+# -----------------------------------------------------------------------------
+[[ -n "${_PROMPT_INITIALIZED:-}" ]] || typeset -g _PROMPT_INITIALIZED=1
+
+# -----------------------------------------------------------------------------
+# Auto-load configuration fragments (conf.d)
+# -----------------------------------------------------------------------------
+if [[ -d "$ZDOTDIR/conf.d" ]]; then
+  for file in "$ZDOTDIR/conf.d"/*.zsh; do
+    [[ -r "$file" ]] && source "$file"
+  done
+fi
+
+# -----------------------------------------------------------------------------
+# Auto-load optional language/runtime modules (plugins)
+# -----------------------------------------------------------------------------
+if [[ -d "$ZDOTDIR/plugins" ]]; then
+  for plugin in "$ZDOTDIR/plugins"/**/*.zsh; do
+    [[ -r "$plugin" ]] && source "$plugin"
+  done
+fi
+
+
+# -----------------------------------------------------------------------------
+# cargo
+# -----------------------------------------------------------------------------
+[[ -f "$HOME/.local/share/cargo/env" ]] && source "$HOME/.local/share/cargo/env"
+
+
+# -----------------------------------------------------------------------------
+# Local customizations (optional)
+# -----------------------------------------------------------------------------
+local local_rc="$ZDOTDIR/.zshrc.local"
+[[ -f "$local_rc" ]] && source "$local_rc"
+
+# To customize prompt, run `p10k configure` or edit ~/.config/zsh/.p10k.zsh.
+[[ ! -f ~/.config/zsh/.p10k.zsh ]] || source ~/.config/zsh/.p10k.zsh

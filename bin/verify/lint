@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+# =============================================================================
+# lint.sh
+# Run static analysis on all bash scripts
+# Uses shellcheck with strict settings
+# =============================================================================
+
+set -euo pipefail
+
+: "${DOTFILES_ROOT:?DOTFILES_ROOT must be set}"
+
+source "$DOTFILES_ROOT/lib/core/log.sh"
+
+log "🔍 Running shellcheck..."
+
+# Find all shell scripts tracked by chezmoi or in repo
+FILES=$(fd -e sh . "$DOTFILES_ROOT" \
+  --exclude .git \
+  --exclude node_modules)
+
+if [ -z "$FILES" ]; then
+    log_warn "No shell scripts found"
+    exit 0
+fi
+
+shellcheck \
+  --external-sources \
+  --severity=warning \
+  $FILES
+
+log "✅ Shellcheck completed successfully"

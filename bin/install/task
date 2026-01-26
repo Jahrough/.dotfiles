@@ -1,0 +1,47 @@
+# ---- Install go-task ---------------------------------------------------------
+install_task() {
+  local max_attempts=5
+  local wait_seconds=2
+
+  log "Ensuring go-task (task) is installed..."
+
+  # Already installed?
+  if command -v task >/dev/null 2>&1; then
+    log "go-task is already installed ✅"
+    return 0
+  fi
+
+  # Install via Homebrew with retry
+  log "Installing go-task via Homebrew..."
+  retry brew install go-task/tap/go-task
+
+  # Activate Homebrew environment once
+  [[ -x /opt/homebrew/bin/brew ]] && eval "$(/opt/homebrew/bin/brew shellenv 2>/dev/null || true)"
+  [[ -x /usr/local/bin/brew ]] && eval "$(/usr/local/bin/brew shellenv 2>/dev/null || true)"
+
+  # Wait for binary to appear
+  for attempt in {1..5}; do
+    command -v task >/dev/null 2>&1 && {
+      log "go-task installed successfully ✅"
+      return 0
+    }
+    log "Waiting for task binary... (attempt $attempt/5)"
+    sleep $wait_seconds
+  done
+
+  die "task installation failed after Homebrew install"
+}
+
+# ---- Validate Taskfile -------------------------------------------------------
+validate_taskfile() {
+  local tf="$DOTFILES_ROOT/Taskfile.yml"
+  [[ -f "$tf" ]] || die "Taskfile.yml not found at $DOTFILES_ROOT"
+
+  task -l >/dev/null 2>&1 || die "Taskfile validation failed: syntax or structure issue"
+
+  log "Taskfile.yml validated successfully ✅"
+}
+
+# ---- Execute Phase-0 Checks --------------------------------------------------
+install_taskfile
+validate_taskfile

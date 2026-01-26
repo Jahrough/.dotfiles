@@ -1,0 +1,24 @@
+version: '3'
+
+# =============================================================================
+# Health / Checks
+# =============================================================================
+
+tasks:
+
+  check:preflight:
+    desc: "🩺 Verify environment prerequisites"
+    cmds:
+      - bash "{{.DOTFILES_BIN}}/preflight"
+
+  check:doctor:
+    desc: "🩺 Verify developer environment health"
+    cmds:
+      - bash "{{.DOTFILES_BIN}}/doctor"
+
+  check:all:
+    desc: "🩺 Run all health checks"
+
+    deps:
+      - check:preflight
+      - check:doctor

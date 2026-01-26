@@ -1,0 +1,183 @@
+# =========================================
+# Ghostty Configuration (~/.config/ghostty/config.toml)
+# Fully Optimized Layout & Appearance
+# =========================================
+
+# -----------------------------
+# General Settings
+# -----------------------------
+[general]
+font = "Fira Code"
+font_size = 14
+theme = "dracula"
+scrollback_lines = 10000
+cursor_blink = true
+enable_unicode = true
+ligatures = true
+
+# -----------------------------
+# Terminal Settings
+# -----------------------------
+[terminal]
+default_shell = "/bin/zsh"
+enable_mouse = true
+escape_time = 0
+gpu_acceleration = true
+use_24_bit_color = true
+default_terminal = "screen-256color"
+focus_events = true
+bracketed_paste = true
+
+# -----------------------------
+# Window & Pane Management
+# -----------------------------
+[windows]
+start_index = 1
+renumber_on_close = true
+
+[pane]
+pane_base_index = 1
+aggressive_resize = true
+
+# -----------------------------
+# Key Bindings
+# -----------------------------
+[key_bindings]
+prefix = "C-a"
+
+# Vim-style pane navigation
+select_left = "h"
+select_down = "j"
+select_up = "k"
+select_right = "l"
+
+# Alt-arrow navigation
+select_left_alt = "M-Left"
+select_down_alt = "M-Down"
+select_up_alt = "M-Up"
+select_right_alt = "M-Right"
+
+# Resize panes
+resize_left = "H"
+resize_down = "J"
+resize_up = "K"
+resize_right = "L"
+resize_step = 5
+
+# Split panes
+split_vertical = "|"
+split_horizontal = "-"
+
+# Window navigation
+next_window = "C-PageDown"
+previous_window = "C-PageUp"
+
+# Create new window in current path
+new_window_current_path = "C-a c"
+
+# Copy mode and search (plugin-friendly)
+copy_mode = "v"
+search_mode = "/"
+
+# -----------------------------
+# Plugins (TPM style)
+# -----------------------------
+[plugins]
+enabled = [
+  "tmux-plugins/tpm",
+  "tmux-plugins/tmux-sensible",
+  "tmux-plugins/tmux-resurrect",
+  "tmux-plugins/tmux-continuum",
+  "tmux-plugins/tmux-yank",
+  "tmux-plugins/tmux-copycat",
+  "christoomey/vim-tmux-navigator",
+  "tmux-plugins/tmux-prefix-highlight",
+]
+
+# -----------------------------
+# Plugin Settings
+# -----------------------------
+[plugin_settings]
+# tmux-resurrect
+resurrect_strategy_vim = "session"
+resurrect_strategy_nvim = "session"
+resurrect_capture_pane_contents = true
+resurrect_save = "S"
+resurrect_restore = "R"
+
+# tmux-continuum
+continuum_restore = true
+continuum_save_interval = 15
+
+# tmux-yank
+yank_action = "copy-pipe-and-cancel"
+yank_command = "pbcopy"              # macOS system clipboard
+
+# tmux-prefix-highlight
+prefix_highlight_show_copy_mode = true
+prefix_highlight_copy_mode_attr = "fg=black,bg=yellow,bold"
+prefix_highlight_show_sync_mode = true
+prefix_highlight_sync_mode_attr = "fg=black,bg=green"
+prefix_highlight_show_prefix = true
+prefix_highlight_prefix_attr = "fg=black,bg=cyan"
+
+# -----------------------------
+# Status Bar
+# -----------------------------
+[status]
+interval = 1
+style_bg = "black"
+style_fg = "white"
+
+# Left status: session name
+left_length = 40
+left = "#[fg=green]💻 Session: #S #[fg=yellow]| "
+
+# Right status: date, time, CPU, RAM, battery, network
+right = "#[fg=cyan]⌚ %d %b %R #[fg=magenta]CPU:#CPU% RAM:#RAM% #[fg=yellow]⚡ #BATTERY #[fg=blue]⬇️#NET_D ⬆️#NET_U"
+
+# Window status
+window_format = " #I:#W "
+window_current_format = "#[fg=black,bg=green] #I:#W "
+
+# Activity monitoring
+monitor_activity = true
+visual_activity = false
+
+# -----------------------------
+# Pane Borders
+# -----------------------------
+[pane_borders]
+style = "fg=colour238"
+active_style = "fg=green"
+
+# -----------------------------
+# Environment & Aliases
+# -----------------------------
+[environment]
+# Ghostty config path
+GHOSTTY_CONFIG = "$HOME/.config/ghostty/config.toml"
+
+# TMUX config path
+TMUX_CONF = "$HOME/.config/tmux/.tmux.conf"
+
+# SSH agent socket
+SSH_AUTH_SOCK = "$HOME/.bitwarden-ssh-agent.sock"
+
+# Homebrew / telemetry flags
+HOMEBREW_NO_ANALYTICS = "1"
+HOMEBREW_NO_AUTO_UPDATE = "1"
+DOTNET_CLI_TELEMETRY_OPTOUT = "1"
+NEXT_TELEMETRY_DISABLED = "1"
+DO_NOT_TRACK = "1"
+
+# Inline image preview (requires 'viu' installed)
+alias viu_preview = "viu -w $(tput cols)"
+
+# Alias for image previews
+# -----------------------------
+# Optional: Miscellaneous
+# -----------------------------
+utf8 = true
+status_utf8 = true
+enable_unicode = true

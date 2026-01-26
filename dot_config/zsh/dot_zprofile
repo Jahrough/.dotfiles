@@ -1,0 +1,43 @@
+# =============================================================================
+# ~/.zprofile — Login shell configuration (XDG-compliant)
+# =============================================================================
+
+# Only for macOS login shells
+[[ "$OSTYPE" == darwin* ]] || return
+
+# -----------------------------------------------------------------------------
+# Homebrew: ensure login shell sees Homebrew binaries first
+# -----------------------------------------------------------------------------
+if [[ -d /opt/homebrew/bin ]]; then
+  path_prepend /opt/homebrew/bin /opt/homebrew/sbin
+elif [[ -d /usr/local/bin ]]; then
+  path_prepend /usr/local/bin /usr/local/sbin
+fi
+
+# -----------------------------------------------------------------------------
+# MANPATH: prioritize Homebrew man pages
+# -----------------------------------------------------------------------------
+if [[ -d /opt/homebrew/share/man ]]; then
+  MANPATH="/opt/homebrew/share/man:${MANPATH:-}"
+  export MANPATH
+fi
+
+# -----------------------------------------------------------------------------
+# Optional: add XDG-compliant manpath fallback (if desired)
+# -----------------------------------------------------------------------------
+# Example: include local/share/man
+[[ -d "$XDG_DATA_HOME/man" ]] && \
+  MANPATH="$XDG_DATA_HOME/man:$MANPATH"
+
+# -----------------------------------------------------------------------------
+# Pyenv initialization for login shells
+# -----------------------------------------------------------------------------
+if [[ -d "$PYENV_ROOT" ]] && command -v pyenv >/dev/null 2>&1; then
+    eval "$(pyenv init --path)"
+fi
+
+
+# -----------------------------------------------------------------------------
+# Final export
+# -----------------------------------------------------------------------------
+export PATH

@@ -1,0 +1,19 @@
+version: '3'
+
+# =============================================================================
+# DX-Friendly Aliases
+# =============================================================================
+
+tasks:
+
+  update:
+    desc: "🔄 Update all tools and configs"
+    deps: [update:all]
+
+  check:
+    desc: "🩺 Run all health checks"
+    deps: [check:all]
+
+  cleanup:
+    desc: "🧹 Clean caches and temporary files"
+    deps: [cleanup]

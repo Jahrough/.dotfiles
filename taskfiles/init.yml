@@ -1,0 +1,27 @@
+version: '3'
+
+# =============================================================================
+# Setup
+# =============================================================================
+
+tasks:
+
+  init:
+    desc: "🚀 Initialize full system"
+    deps:
+      - check:preflight
+      - install:tools
+      - install:mise
+      - install:shell-tools
+      - machine-profile:apply
+      - check:doctor
+      - cleanup:all
+      - init:summary
+
+  init:summary:
+    desc: "✅ Initialization summary"
+    cmds:
+      - |
+        echo "✅ Initialization complete!"
+        echo "• Profile: {{.profile}}"
+        echo "• Log file: {{.log_file}}"

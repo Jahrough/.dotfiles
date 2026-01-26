@@ -1,0 +1,97 @@
+# Operating System
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# Chezmoi
+.chezmoidata.toml
+.chezmoi.toml.tmp
+
+# Logs
+logs/
+*.log
+
+# Secrets (should use chezmoi encryption instead)
+**/credentials
+**/.env
+!**/.env.example
+**/secrets.yml
+**/*.pem
+**/*.key
+**/*.crt
+
+# Compiled/Cache
+*.pyc
+__pycache__/
+node_modules/
+.cache/
+
+# IDE
+.vscode/
+.idea/
+*.sublime-*
+
+# Zsh
+.zcompdump
+.zsh_history
+.zsh_sessions/
+
+# Docker binaries (generated, not source)
+dot_config/docker/bin/
+dot_config/docker/dot_docker/bin/
+dot_config/docker/contexts/
+dot_config/docker/private_*/
+
+# tmux plugins .git directories
+dot_config/tmux/plugins/**/dot_git/
+
+# Backup files
+*.backup
+*-1766319679775409
+
+# Test artifacts
+test/tmp/
+test/output/
+```
+
+---
+
+### **2. `.chezmoiignore`**
+```
+# Ignore Docker binaries and generated files
+{{ if ne .chezmoi.os "darwin" }}
+.config/ghostty/
+{{ end }}
+
+# Ignore based on profile
+{{ if ne .profile "devops" }}
+.config/zsh/plugins/kubectl.plugin.zsh
+.config/zsh/plugins/terraform.plugin.zsh
+{{ end }}
+
+{{ if ne .profile "backend" }}
+.config/zsh/plugins/docker.plugin.zsh
+{{ end }}
+
+# Always ignore
+.config/docker/bin/
+.config/docker/.docker/bin/
+.config/docker/contexts/
+.config/docker/private_*/
+.config/docker/models/
+.config/docker/mcp/
+.config/tmux/plugins/*/.git/
+.DS_Store
+README.md
+CHANGELOG.md
+LICENSE
+docs/
+test/
+.github/

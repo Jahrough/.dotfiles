@@ -1,0 +1,60 @@
+#!/usr/bin/env bash
+# =============================================================================
+# update-mise.sh
+# Safely updates mise itself, plugins, and installed runtimes
+# =============================================================================
+
+set -euo pipefail
+
+# -----------------------------------------------------------------------------
+# XDG + logging
+# -----------------------------------------------------------------------------
+XDG_STATE_HOME="${XDG_STATE_HOME:-$HOME/.local/state}"
+LOG_FILE="${DOTFILES_LOG:-$XDG_STATE_HOME/dotfiles-setup.log}"
+
+log() {
+  echo "[INFO] $*" | tee -a "$LOG_FILE"
+}
+
+warn() {
+  echo "[WARN] $*" | tee -a "$LOG_FILE"
+}
+
+# -----------------------------------------------------------------------------
+# Preconditions
+# -----------------------------------------------------------------------------
+if ! command -v mise >/dev/null 2>&1; then
+  warn "mise is not installed. Skipping mise update."
+  exit 0
+fi
+
+log "Starting mise update process..."
+
+# -----------------------------------------------------------------------------
+# Update mise binary
+# -----------------------------------------------------------------------------
+log "Updating mise binary..."
+mise self-update 2>&1 | tee -a "$LOG_FILE"
+
+# -----------------------------------------------------------------------------
+# Update plugins
+# -----------------------------------------------------------------------------
+log "Updating mise plugins..."
+mise plugins update 2>&1 | tee -a "$LOG_FILE"
+
+# -----------------------------------------------------------------------------
+# Upgrade installed runtimes
+# -----------------------------------------------------------------------------
+log "Upgrading installed runtimes..."
+mise upgrade 2>&1 | tee -a "$LOG_FILE"
+
+# -----------------------------------------------------------------------------
+# Optional cleanup (non-destructive)
+# -----------------------------------------------------------------------------
+log "Pruning unused versions (safe cleanup)..."
+mise prune 2>&1 | tee -a "$LOG_FILE" || warn "Prune step failed (non-fatal)."
+
+# -----------------------------------------------------------------------------
+# Done
+# -----------------------------------------------------------------------------
+log "mise update complete ✅"

@@ -1,0 +1,72 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# =============================================================================
+# VS Code Bootstrap
+# =============================================================================
+# Purpose:
+#   - Symlink user settings and keybindings from dotfiles
+#   - Install pinned extensions from extensions.json
+#   - Log actions to console and log file
+#   - Respect DRY_RUN and VERBOSE flags
+# =============================================================================
+
+: "${XDG_CONFIG_HOME:=$HOME/.config}"
+: "${XDG_STATE_HOME:=$HOME/.local/state}"
+
+VS_USER_DIR="$XDG_CONFIG_HOME/Code/User"
+DOTFILES="$XDG_CONFIG_HOME/dotfiles"
+
+readonly LOG_DIR="$XDG_STATE_HOME/logs"
+readonly LOG_FILE="$LOG_DIR/install/vscode.log"
+mkdir -p "$VS_USER_DIR" "$LOG_DIR"
+
+# -----------------------------------------------------------------------------
+# Include logging and run helpers
+# -----------------------------------------------------------------------------
+source "$DOTFILES_ROOT/lib/log.sh"
+source "$DOTFILES_ROOT/lib/run.sh"
+
+# -----------------------------------------------------------------------------
+# Symlink VS Code settings
+# -----------------------------------------------------------------------------
+symlink_vscode_settings() {
+    log "🔗 Linking VS Code settings and keybindings..."
+    run "Symlink settings.json" ln -sf "$DOTFILES/vscode/settings.json" "$VS_USER_DIR/settings.json"
+    run "Symlink keybindings.json" ln -sf "$DOTFILES/vscode/keybindings.json" "$VS_USER_DIR/keybindings.json"
+}
+
+symlink_vscode_settings
+
+# -----------------------------------------------------------------------------
+# Install pinned extensions
+# -----------------------------------------------------------------------------
+install_extensions() {
+    if ! command -v code >/dev/null 2>&1; then
+        log_warn "VS Code CLI 'code' not found, skipping extension install"
+        return
+    fi
+
+    local extensions_file="$DOTFILES/vscode/extensions.json"
+    if [ ! -f "$extensions_file" ]; then
+        log_warn "Extensions file not found: $extensions_file"
+        return
+    fi
+
+    log "📦 Installing VS Code extensions from $extensions_file..."
+
+    jq -r '.[]' "$extensions_file" | while IFS= read -r ext; do
+        for i in {1..3}; do
+            if run "Install VS Code extension $ext" code --install-extension "$ext"; then
+                break
+            else
+                log_warn "Retry $i for $ext failed, retrying in 3s..."
+                sleep 3
+            fi
+        done
+    done
+}
+
+install_extensions
+
+log "✅ VS Code setup complete"

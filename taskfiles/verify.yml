@@ -1,0 +1,19 @@
+version: '3'
+
+tasks:
+
+  lint:
+    desc: Run shellcheck on all bash scripts
+    cmds:
+      - bash "{{.DOTFILES_BIN}}/verify/lint.sh"
+
+  fmt:
+    desc: Format all bash scripts using shfmt
+    cmds:
+      - bash "{{.DOTFILES_BIN}}/verify/fmt.sh"
+  
+  check:
+    desc: Format all bash scripts using shfmt
+    cmds:
+      - bash "{{.DOTFILES_BIN}}/verify/lint.sh"
+      - bash "{{.DOTFILES_BIN}}/verify/fmt.sh"

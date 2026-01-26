@@ -1,0 +1,98 @@
+#!/usr/bin/env bash
+# =============================================================================
+# install/mise.sh
+# Idempotent mise runtime installer
+# Fully XDG-compliant, retry & logging support
+# =============================================================================
+
+set -euo pipefail
+
+# -----------------------------------------------------------------------------
+# Environment defaults
+# -----------------------------------------------------------------------------
+: "${DOTFILES_ROOT:?DOTFILES_ROOT must be set}"  # Required for helpers
+: "${VERBOSE:=true}"
+: "${DRY_RUN:=false}"
+: "${XDG_CONFIG_HOME:=$HOME/.config}"
+: "${XDG_STATE_HOME:=$HOME/.local/state}"
+: "${MISE_RETRIES:=3}"
+: "${MISE_RETRY_DELAY:=5}"
+
+readonly LOG_DIR="$XDG_STATE_HOME/logs"
+readonly LOG_FILE="$LOG_DIR/install/mise.log"
+readonly MISE_CONFIG="$XDG_CONFIG_HOME/mise/mise.toml"
+
+mkdir -p "$LOG_DIR"
+
+# -----------------------------------------------------------------------------
+# Include helpers
+# -----------------------------------------------------------------------------
+source "$DOTFILES_ROOT/lib/log.sh"
+source "$DOTFILES_ROOT/lib/run.sh"
+
+[ "$DRY_RUN" = true ] && log_warn "⚡ DRY_RUN mode active: no commands will be executed"
+
+log "🚀 Starting mise runtime installation..."
+
+# -----------------------------------------------------------------------------
+# Pure functions
+# -----------------------------------------------------------------------------
+
+# Check if a command exists
+check_command() {
+    local cmd="$1"
+    command -v "$cmd" >/dev/null 2>&1
+}
+
+# Run mise install with retries
+install_mise() {
+    if ! check_command mise; then
+        log_error "mise CLI not installed. Please install mise first."
+        return 1
+    fi
+
+    if [ ! -f "$MISE_CONFIG" ]; then
+        log_error "mise config not found at $MISE_CONFIG"
+        return 1
+    fi
+
+    log "📦 Installing runtimes from mise.toml..."
+    local attempt
+    for attempt in $(seq 1 "$MISE_RETRIES"); do
+        if run "mise install attempt $attempt" mise install >"$LOG_FILE" 2>&1; then
+            log "✅ mise install succeeded"
+            return 0
+        else
+            log_warn "⚠️ Retry $attempt/$MISE_RETRIES failed, retrying in $MISE_RETRY_DELAY s..."
+            [ "$DRY_RUN" = true ] || sleep "$MISE_RETRY_DELAY"
+        fi
+    done
+
+    log_warn "⚠️ Failed to install runtimes after $MISE_RETRIES attempts"
+    return 1
+}
+
+# Verify that runtimes are available on PATH
+verify_runtimes() {
+    local runtimes=(node python go)
+    log "🔍 Verifying runtimes..."
+    local cmd
+    for cmd in "${runtimes[@]}"; do
+        if ! check_command "$cmd"; then
+            log_warn "$cmd not available"
+        else
+            log "✅ $cmd available"
+        fi
+    done
+}
+
+# -----------------------------------------------------------------------------
+# Main workflow
+# -----------------------------------------------------------------------------
+main() {
+    install_mise && verify_runtimes
+}
+
+main
+
+log "🎉 mise runtimes installation complete"

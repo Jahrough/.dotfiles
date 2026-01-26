@@ -1,0 +1,206 @@
+# ==================================
+# Sensitive & Security
+# ==================================
+*.key
+*.pem
+*_history
+.ssh/
+.gnupg/
+credentials.db
+access_tokens.db
+**/credentials/
+**/legacy_credentials/
+
+# ==================================
+# OS & Editor
+# ==================================
+.DS_Store
+*.swp
+*.swo
+*.tmp
+*~
+
+# ==================================
+# Local Overrides
+# ==================================
+*.local
+
+# ==================================
+# Logs & Databases
+# ==================================
+*.log
+**/logs/
+log.txt
+*.db
+*.sqlite
+*.sqlite3
+
+# ==================================
+# Cache & Temporary
+# ==================================
+cache/
+**/cache/
+Cache/
+**/Cache/
+tmp/
+**/tmp/
+*.cache
+
+# ==================================
+# Dependencies & Node
+# ==================================
+node_modules/
+**/node_modules/
+package-lock.json
+.pnpm-store/
+
+# ==================================
+# Binary & Compiled
+# ==================================
+*.wasm
+**/compiled_*/
+*.so
+*.dylib
+
+# ==================================
+# Application-Specific
+# ==================================
+
+# Backup directories
+*.bak/
+**/*.bak/
+**/Backup/
+**/backup/
+
+# Vim
+.vim/autoload/
+.vim/plugged/
+.vim/bundle/
+.vim/.netrwhist
+
+# Neovim
+.config/nvim/lazy/
+.config/nvim.bak/
+.config/coc/extensions/node_modules/
+
+# Zsh
+.zsh/cache/
+.zsh/.zcompdump*
+
+# Oracle SQL Developer - ignore generated files
+.oraclesqldeveloperdatamodeler/system*/o.ide.*/dmnode*
+.oraclesqldeveloperdatamodeler/system*/o.ide.*/dtcache.xml
+.oraclesqldeveloperdatamodeler/system*/o.ide.*/runStatus.xml
+.oraclesqldeveloperdatamodeler/system*/o.ide.usages-tracking*/
+.oraclesqldeveloperdatamodeler/system*/oracle.javatools.cache/
+.oraclesqldeveloperdatamodeler/system*/o.sqldeveloper.*/DefaultWorkspace/
+.oraclesqldeveloperdatamodeler/system*/o.jdeveloper.*/vcs.log
+.oraclesqldeveloperdatamodeler/system*/o.jdeveloper.runner.core.*/hs_breakpoints.xml
+.oraclesqldeveloperdatamodeler/system*/dropins_support/
+.oraclesqldeveloperdatamodeler/system*/o.deploy.*/
+.oraclesqldeveloperdatamodeler/system*/o.ide.audit.*/
+.oraclesqldeveloperdatamodeler/system*/o.ide.bookmarks.*/
+.oraclesqldeveloperdatamodeler/system*/o.ide.ceditor*/
+.oraclesqldeveloperdatamodeler/system*/o.ide.compareapi.*/
+.oraclesqldeveloperdatamodeler/system*/o.ide.db.*/
+.oraclesqldeveloperdatamodeler/system*/o.ide.externaltools.*/
+.oraclesqldeveloperdatamodeler/system*/o.ide.file*/
+.oraclesqldeveloperdatamodeler/system*/o.ide.gallery*/
+.oraclesqldeveloperdatamodeler/system*/o.ide.help*/
+.oraclesqldeveloperdatamodeler/system*/o.ide.import*/
+.oraclesqldeveloperdatamodeler/system*/o.ide.indexing.*/
+.oraclesqldeveloperdatamodeler/system*/o.ide.insight.*/
+.oraclesqldeveloperdatamodeler/system*/o.ide.inspector.*/
+.oraclesqldeveloperdatamodeler/system*/o.ide.library.*/
+.oraclesqldeveloperdatamodeler/system*/o.ide.localhistory.*/
+.oraclesqldeveloperdatamodeler/system*/o.ide.log.*/
+.oraclesqldeveloperdatamodeler/system*/o.ide.macros.*/
+.oraclesqldeveloperdatamodeler/system*/o.ide.markers.*/
+.oraclesqldeveloperdatamodeler/system*/o.ide.navigator.*/
+.oraclesqldeveloperdatamodeler/system*/o.ide.palette*/
+.oraclesqldeveloperdatamodeler/system*/o.ide.persistence.*/
+.oraclesqldeveloperdatamodeler/system*/o.ide.quickdiff.*/
+.oraclesqldeveloperdatamodeler/system*/o.ide.replace.*/
+.oraclesqldeveloperdatamodeler/system*/o.ide.runner.*/
+.oraclesqldeveloperdatamodeler/system*/o.ide.searchbar.*/
+.oraclesqldeveloperdatamodeler/system*/o.ide.status.*/
+.oraclesqldeveloperdatamodeler/system*/o.ide.thumbnail.*/
+.oraclesqldeveloperdatamodeler/system*/o.ide.vcs*/
+.oraclesqldeveloperdatamodeler/system*/o.ide.vfs.*/
+.oraclesqldeveloperdatamodeler/system*/o.ide.vhv.*/
+.oraclesqldeveloperdatamodeler/system*/o.ide.webbrowser.*/
+.oraclesqldeveloperdatamodeler/system*/o.ide.webupdate.*/
+.oraclesqldeveloperdatamodeler/system*/o.ideimpl.*/
+.oraclesqldeveloperdatamodeler/system*/o.jdeveloper.build.*/
+.oraclesqldeveloperdatamodeler/system*/o.jdeveloper.common.*/
+.oraclesqldeveloperdatamodeler/system*/o.jdeveloper.db.*/
+.oraclesqldeveloperdatamodeler/system*/o.jdeveloper.history.*/
+.oraclesqldeveloperdatamodeler/system*/o.jdeveloper.java.*/
+.oraclesqldeveloperdatamodeler/system*/o.jdeveloper.jdev-runner*/
+.oraclesqldeveloperdatamodeler/system*/o.jdeveloper.patch.*/
+.oraclesqldeveloperdatamodeler/system*/o.jdeveloper.runner.*/
+.oraclesqldeveloperdatamodeler/system*/o.jdeveloper.technology.*/
+.oraclesqldeveloperdatamodeler/system*/o.jdeveloper.vcs.*/
+.oraclesqldeveloperdatamodeler/system*/o.sqldeveloper.cloud.*/
+.oraclesqldeveloperdatamodeler/system*/o.sqldeveloper.extras.*/
+.oraclesqldeveloperdatamodeler/system*/o.sqldeveloper.filenavigator.*/
+.oraclesqldeveloperdatamodeler/system*/o.sqldeveloper.jdbcproxy.*/
+.oraclesqldeveloperdatamodeler/system*/o.sqldeveloper.macos.*/
+.oraclesqldeveloperdatamodeler/system*/o.sqldeveloper.ssh.*/
+.oraclesqldeveloperdatamodeler/system*/o.sqldeveloper.utils.*/
+.oraclesqldeveloperdatamodeler/system*/o.sqldeveloper.worksheet.*/
+
+# Keep only Oracle SQL Developer preferences
+!.oraclesqldeveloperdatamodeler/*/product.conf
+!.oraclesqldeveloperdatamodeler/system*/ide-extension-prefs.xml
+!.oraclesqldeveloperdatamodeler/system*/o.datamodeler/product-preferences.xml
+!.oraclesqldeveloperdatamodeler/system*/o.datamodeler/ide.properties
+!.oraclesqldeveloperdatamodeler/system*/o.ide.*/preferences.xml
+!.oraclesqldeveloperdatamodeler/system*/o.ide.*/settings.xml
+!.oraclesqldeveloperdatamodeler/system*/o.ide.*/*.layout
+!.oraclesqldeveloperdatamodeler/system*/o.sqldeveloper.*/preferences.xml
+!.oraclesqldeveloperdatamodeler/system*/o.sqldeveloper.*/ide.properties
+
+# Google Cloud
+.config/gcloud/logs/
+.config/gcloud/access_tokens.db
+.config/gcloud/credentials.db
+.config/gcloud/legacy_credentials/
+
+# GitHub CLI
+.config/gh/hosts.yml
+
+# Joplin
+.config/joplin-desktop/cache/
+.config/joplin-desktop/tmp/
+.config/joplin-desktop/resources/
+.config/joplin-desktop/database.sqlite
+.config/joplin-desktop/log.txt
+.config/joplin-desktop/window-state*.json
+.config/joplin-desktop/JoplinBackup/
+
+# Raycast
+.config/raycast/extensions/*/node_modules/
+.config/raycast/ai/
+
+# RStudio
+.config/rstudio/dictionaries/
+
+# Qt Creator
+.config/QtProject/*/scripts/
+.config/QtProject/*/macros/
+
+# iTerm2
+.config/iterm2/sockets/
+
+# btop
+.config/btop/
+
+# Sanity (may contain API keys)
+.config/sanity/config.json
+
+# rclone (may contain credentials)
+.config/rclone/rclone.conf
+
+# Trae
+.trae/.trae

@@ -1,0 +1,72 @@
+# -----------------------------------------------------------------------------
+# Suppress macOS "Last login" messages
+# -----------------------------------------------------------------------------
+[[ -o login ]] && export HUSHLOGIN=1
+
+# -----------------------------------------------------------------------------
+# XDG Base Directories
+# -----------------------------------------------------------------------------
+# These define the standard locations for configuration, data, cache, and state files.
+# If the environment variable is already set externally, we preserve it; otherwise, we default to standard XDG locations.
+export XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"        # User config files
+export XDG_DATA_HOME="${XDG_DATA_HOME:-$HOME/.local/share}"      # User-specific data files
+export XDG_CACHE_HOME="${XDG_CACHE_HOME:-$HOME/.cache}"          # Cache files
+export XDG_STATE_HOME="${XDG_STATE_HOME:-$HOME/.local/state}"    # State files (logs, runtime info)
+
+# -----------------------------------------------------------------------------
+# Zsh config & cache directories
+# -----------------------------------------------------------------------------
+# ZDOTDIR is where all Zsh configuration files reside.
+# ZSH_CACHE_DIR is a dedicated cache directory for Zsh runtime artifacts.
+export ZDOTDIR="${ZDOTDIR:-$XDG_CONFIG_HOME/zsh}"                # Zsh configuration root
+export ZSH_CACHE_DIR="${ZSH_CACHE_DIR:-$XDG_CACHE_HOME/zsh}"     # Zsh-specific cache
+
+# -----------------------------------------------------------------------------
+# Minimal system PATH
+# -----------------------------------------------------------------------------
+# Establish a clean base PATH to ensure predictable command resolution.
+export PATH="/usr/bin:/bin:/usr/sbin:/sbin"
+
+# -----------------------------------------------------------------------------
+# Locale
+# -----------------------------------------------------------------------------
+# Set UTF-8 locales to ensure consistent encoding and string handling.
+export LANG="en_US.UTF-8"
+export LC_ALL="en_US.UTF-8"
+export LC_CTYPE="en_US.UTF-8"
+
+# -----------------------------------------------------------------------------
+# History
+# -----------------------------------------------------------------------------
+# Use an XDG-compliant history file location to avoid polluting home directory.
+export HISTFILE="$XDG_STATE_HOME/zsh/history"
+
+# -----------------------------------------------------------------------------
+# Security
+# -----------------------------------------------------------------------------
+# Set default file creation permissions for user files.
+umask 022
+
+# -----------------------------------------------------------------------------
+# Helpers (always available)
+# -----------------------------------------------------------------------------
+# Load core helper functions (e.g., path_prepend, path_append, ensure_dirs).
+# These functions are side-effect-free and safe to source multiple times.
+local helper="$ZDOTDIR/lib/helpers.zsh"
+if [[ -r "$helper" ]]; then
+    source "$helper"
+else
+    print -u2 "Warning: helpers not found: $helper"
+fi
+
+# -----------------------------------------------------------------------------
+# Machine-specific overrides (optional)
+# -----------------------------------------------------------------------------
+# Load per-machine or per-user customizations.
+# This file can override PATH, environment variables, or aliases for this machine.
+# Fails silently if missing.
+local local_rc="$ZDOTDIR/.zshrc.local"
+if [[ -r "$local_rc" ]]; then
+    source "$local_rc"
+fi
+. "/Users/jlopez/.local/share/cargo/env"

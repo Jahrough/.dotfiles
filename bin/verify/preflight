@@ -1,0 +1,46 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+GREEN="\033[0;32m"
+RED="\033[0;31m"
+NC="\033[0m"
+
+check_cmd() {
+  if ! command -v "$1" >/dev/null 2>&1; then
+    echo -e "${RED}❌ Required command missing: $1${NC}"
+    exit 1
+  else
+    echo -e "${GREEN}✅ $1 found${NC}"
+  fi
+}
+
+check_dir() {
+  if [ ! -w "$1" ]; then
+    echo -e "${RED}❌ Directory not writable: $1${NC}"
+    exit 1
+  else
+    echo -e "${GREEN}✅ $1 writable${NC}"
+  fi
+}
+
+echo "🔍 Checking operating system..."
+echo "OS: $(uname -s), Arch: $(uname -m)"
+
+echo "🔍 Checking required commands..."
+for cmd in git curl; do
+  check_cmd "$cmd"
+done
+
+echo "🔍 Checking HOME directory..."
+check_dir "$HOME"
+
+echo "🔍 Checking XDG directories..."
+
+: "${XDG_CONFIG_HOME:=$HOME/.config}"
+: "${XDG_STATE_HOME:=$HOME/.local/state}"
+
+mkdir -p "$XDG_CONFIG_HOME" "$XDG_STATE_HOME"
+check_dir "$XDG_CONFIG_HOME"
+check_dir "$XDG_STATE_HOME"
+
+echo "✅ Preflight checks passed"

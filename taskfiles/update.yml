@@ -1,0 +1,25 @@
+version: '3'
+
+# =============================================================================
+# Updates
+# =============================================================================
+
+tasks:
+
+  update:brew:
+    desc: "Update Homebrew packages"
+    cmds:
+      - bash "{{.DOTFILES_BIN}}/update/brew"
+
+  update:mise:
+    desc: "Update mise runtimes"
+    cmds:
+      - bash "{{.DOTFILES_BIN}}/update/mise"
+
+  update:all:
+    desc: "Update all tools and configurations"
+    deps:
+      - update:brew
+      - update:mise
+      - install:shell-tools
+      - cleanup:all

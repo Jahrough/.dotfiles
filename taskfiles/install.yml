@@ -1,0 +1,52 @@
+version: '3'
+
+# =============================================================================
+# Installation Tasks
+# =============================================================================
+
+tasks:
+
+  install:tools:
+    desc: "🍺 Install Homebrew packages (retry-friendly)"
+    cmds:
+      - |
+        for i in $(seq 1 {{.retries}}); do
+          bash "{{.DOTFILES_BIN}}/install/homebrew" {{.DRY_RUN_FLAG}} && break || {
+            echo "[WARN] Retry $i failed, waiting {{.retry_delay}}s..."
+            sleep {{.retry_delay}}
+          }
+        done
+
+  install:mise:
+    desc: "Install mise runtimes (Python, Node, Go)"
+    cmds:
+      - bash "{{.DOTFILES_BIN}}/install/mise" {{.DRY_RUN_FLAG}}
+
+  install:vscode:
+    desc: "🖥 Configure VSCode"
+    cmds:
+      - bash "{{.DOTFILES_BIN}}/install/vscode" {{.DRY_RUN_FLAG}}
+
+  install:neovim:
+    desc: "💻 Configure Neovim"
+    cmds:
+      - bash "{{.DOTFILES_BIN}}/install/nvim" {{.DRY_RUN_FLAG}}
+
+  install:starship:
+    desc: "⭐ Install Starship prompt"
+    cmds:
+      - bash "{{.DOTFILES_BIN}}/install/starship" {{.DRY_RUN_FLAG}}
+
+  install:fzf:
+    desc: "🔍 Install fzf"
+    cmds:
+      - bash "{{.DOTFILES_BIN}}/install/fzf" {{.DRY_RUN_FLAG}}
+
+  install:shell-tools:
+    desc: "⚙️ Install editors & shell tools in parallel"
+    run: parallel
+    deps:
+      - install:vscode
+      - install:neovim
+      - install:starship
+      - install:fzf

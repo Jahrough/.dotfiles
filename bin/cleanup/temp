@@ -1,0 +1,265 @@
+#!/usr/bin/env bash
+# =============================================================================
+# cleanup.sh
+# Functional, idempotent developer environment cleanup
+# Fully XDG-compliant, DRY_RUN mode, interactive confirmation, disk summary
+# Safe defaults: full project directories (node_modules, venv, Rust target) skipped
+# -----------------------------------------------------------------------------
+# USAGE / SAFETY NOTES:
+# 1. DRY_RUN=true    → Preview actions without actually deleting anything
+# 2. INTERACTIVE=true → Prompt for confirmation before each action
+# 3. FULL_CLEAN=true → Enable risky deletions (node_modules, Python venvs, Rust target)
+# 4. Defaults are safe: without FULL_CLEAN, only caches, temp dirs, logs, Docker, and editor history are removed
+# 5. Can combine modes:
+#      DRY_RUN=true INTERACTIVE=true FULL_CLEAN=true ./cleanup.sh
+#    → Preview all actions interactively including risky project directories
+# =============================================================================
+
+set -euo pipefail
+
+# -----------------------------------------------------------------------------
+# Environment defaults
+# -----------------------------------------------------------------------------
+: "${DOTFILES_ROOT:?DOTFILES_ROOT must be set}"          # Must define DOTFILES_ROOT
+: "${VERBOSE:=true}"                                     # Enable verbose logging
+: "${DRY_RUN:=false}"                                    # Preview actions without executing
+: "${INTERACTIVE:=false}"                                # Prompt user for each action
+: "${FULL_CLEAN:=false}"                                 # Only delete risky directories if true
+: "${XDG_CACHE_HOME:=$HOME/.cache}"                      # Cache directory
+: "${XDG_STATE_HOME:=$HOME/.local/state}"               # State directory
+: "${TMP_DIR:=$XDG_CACHE_HOME/tmp}"                     # Temporary files directory
+: "${LOG_DIR:=$XDG_STATE_HOME/logs}"                     # Logs directory
+: "${LOG_FILE:=$LOG_DIR/cleanup.log}"                   # Log file path
+: "${RETRIES:=3}"                                        # Retry attempts for commands
+: "${RETRY_DELAY:=3}"                                    # Delay between retries in seconds
+
+mkdir -p "$LOG_DIR"
+
+# -----------------------------------------------------------------------------
+# Include helpers
+# -----------------------------------------------------------------------------
+source "$DOTFILES_ROOT/lib/log.sh"        # Logging functions
+source "$DOTFILES_ROOT/lib/run.sh" # Respect DRY_RUN
+
+# Print mode warnings
+[ "$DRY_RUN" = true ] && log_warn "⚡ DRY_RUN mode active: no commands will be executed"
+[ "$INTERACTIVE" = true ] && log_warn "⚡ INTERACTIVE mode active: you will be prompted for each action"
+[ "$FULL_CLEAN" = false ] && log_warn "⚡ FULL_CLEAN disabled: risky deletions (node_modules, venvs, Rust target) will be skipped"
+
+log "🧹 Starting developer environment cleanup..."
+
+# -----------------------------------------------------------------------------
+# Utility functions
+# -----------------------------------------------------------------------------
+check_command() { command -v "$1" >/dev/null 2>&1; }       # Check if a command exists
+size_in_bytes() { du -sb "$1" 2>/dev/null | cut -f1; }     # Get directory/file size in bytes
+
+# Convert bytes to human-readable format
+human_size() {
+    local bytes="$1"
+    local kib=$((1024))
+    local mib=$((1024 * 1024))
+    local gib=$((1024 * 1024 * 1024))
+    if [ "$bytes" -ge "$gib" ]; then
+        printf "%.2f GB" "$(bc -l <<<"$bytes/$gib")"
+    elif [ "$bytes" -ge "$mib" ]; then
+        printf "%.2f MB" "$(bc -l <<<"$bytes/$mib")"
+    elif [ "$bytes" -ge "$kib" ]; then
+        printf "%.2f KB" "$(bc -l <<<"$bytes/$kib")"
+    else
+        printf "%d B" "$bytes"
+    fi
+}
+
+# Interactive confirmation prompt
+confirm() {
+    local prompt="$1"
+    if [ "$INTERACTIVE" = true ]; then
+        read -rp "$prompt [y/N]: " resp
+        [[ "$resp" =~ ^[Yy]$ ]]
+    else
+        return 0
+    fi
+}
+
+# -----------------------------------------------------------------------------
+# Cleanup functions
+# -----------------------------------------------------------------------------
+declare -A FREED_SPACE  # Track deleted file/directory sizes for summary
+
+# Delete a directory safely
+cleanup_dir() {
+    local dir="$1"
+    local label="${2:-$dir}"
+    [ ! -d "$dir" ] && return
+
+    local size
+    size=$(size_in_bytes "$dir")
+    FREED_SPACE["$label"]=$size
+
+    if ! confirm "Remove $dir (~$(human_size "$size"))?"; then
+        log "ℹ️ Skipping $dir"
+        return
+    fi
+
+    if [ "$DRY_RUN" = true ]; then
+        log "ℹ️ [DRY_RUN] Would remove $dir (~$(human_size "$size"))"
+    else
+        run "Remove $dir" rm -rf "$dir"
+        log "✅ Removed $dir (~$(human_size "$size"))"
+    fi
+}
+
+# Delete a file safely
+cleanup_file() {
+    local file="$1"
+    local label="${2:-$file}"
+    [ ! -f "$file" ] && return
+
+    local size
+    size=$(size_in_bytes "$file")
+    FREED_SPACE["$label"]=$size
+
+    if ! confirm "Remove $file (~$(human_size "$size"))?"; then
+        log "ℹ️ Skipping $file"
+        return
+    fi
+
+    if [ "$DRY_RUN" = true ]; then
+        log "ℹ️ [DRY_RUN] Would remove $file (~$(human_size "$size"))"
+    else
+        run "Remove $file" rm -f "$file"
+        log "✅ Removed $file (~$(human_size "$size"))"
+    fi
+}
+
+# Cleanup Homebrew caches
+cleanup_homebrew() {
+    if check_command brew; then
+        confirm "Run Homebrew cleanup?" || { log "ℹ️ Skipping Homebrew cleanup"; return; }
+        if [ "$DRY_RUN" = true ]; then
+            log "ℹ️ [DRY_RUN] Would run 'brew cleanup -s'"
+        else
+            run "brew cleanup" brew cleanup -s
+        fi
+    fi
+}
+
+# Cleanup package manager caches
+cleanup_package_caches() {
+    local caches=( \
+        "$HOME/.npm" \
+        "$HOME/.cache/yarn" \
+        "$HOME/.local/share/pnpm" \
+        "$HOME/.cache/pip" \
+        "$HOME/.cargo/registry" \
+        "$HOME/.cargo/git" \
+    )
+    for dir in "${caches[@]}"; do cleanup_dir "$dir"; done
+}
+
+# Cleanup editor caches
+cleanup_editor_caches() {
+    local nvim_caches=( \
+        "$XDG_DATA_HOME/nvim/backup" \
+        "$XDG_DATA_HOME/nvim/swap" \
+    )
+    for dir in "${nvim_caches[@]}"; do cleanup_dir "$dir"; done
+
+    local vscode_caches=( \
+        "$XDG_CONFIG_HOME/Code/Cache" \
+        "$XDG_CONFIG_HOME/Code/CachedData" \
+        "$XDG_CONFIG_HOME/Code/User/workspaceStorage" \
+    )
+    for dir in "${vscode_caches[@]}"; do cleanup_dir "$dir"; done
+}
+
+# Cleanup shell history files
+cleanup_shell_history() {
+    local histories=( \
+        "$HOME/.bash_history" \
+        "$HOME/.zsh_history" \
+        "$HOME/.local/share/fish/fish_history" \
+        "$HOME/.zcompdump*" \
+    )
+    for file in "${histories[@]}"; do cleanup_file $file; done
+}
+
+# Cleanup Docker system
+cleanup_docker() {
+    if check_command docker; then
+        confirm "Run Docker system prune?" || { log "ℹ️ Skipping Docker prune"; return; }
+        if [ "$DRY_RUN" = true ]; then
+            log "ℹ️ [DRY_RUN] Would run 'docker system prune -af --volumes'"
+        else
+            run "docker system prune" docker system prune -af --volumes
+        fi
+    fi
+}
+
+# Cleanup temporary directories
+cleanup_tmp_dirs() {
+    local dirs=("$TMP_DIR" "$XDG_CACHE_HOME")
+    for dir in "${dirs[@]}"; do cleanup_dir "$dir"; done
+}
+
+# Cleanup old logs
+cleanup_old_logs() {
+    if [ -d "$LOG_DIR" ]; then
+        confirm "Remove log files older than 30 days?" || { log "ℹ️ Skipping old log cleanup"; return; }
+        if [ "$DRY_RUN" = true ]; then
+            log "ℹ️ [DRY_RUN] Would remove old logs in $LOG_DIR"
+        else
+            run "Cleanup old logs" find "$LOG_DIR" -type f -mtime +30 -delete
+        fi
+    fi
+}
+
+# Cleanup risky project directories
+cleanup_full() {
+    [ "$FULL_CLEAN" = true ] || return
+    confirm "Run FULL cleanup of node_modules, venvs, Rust target?" || { log "ℹ️ Skipping FULL cleanup"; return; }
+
+    find "$HOME" -type d -name "node_modules" -prune | while read -r dir; do
+        cleanup_dir "$dir" "node_modules: $dir"
+    done
+
+    find "$HOME" -type d -name "venv" -prune | while read -r dir; do
+        cleanup_dir "$dir" "Python venv: $dir"
+    done
+
+    cleanup_dir "$HOME/.cargo/target" "Rust target"
+}
+
+# Display a summary of freed disk space
+display_summary() {
+    log "💾 Disk space affected:"
+    printf "%-60s %15s\n" "Directory/File" "Size"
+    printf "%-60s %15s\n" "------------------------------------------------------------" "---------------"
+    local total_bytes=0
+    for key in "${!FREED_SPACE[@]}"; do
+        printf "%-60s %15s\n" "$key" "$(human_size "${FREED_SPACE[$key]}")"
+        total_bytes=$((total_bytes + FREED_SPACE[$key]))
+    done
+    printf "%-60s %15s\n" "------------------------------------------------------------" "$(human_size "$total_bytes")"
+    log "💾 Total approximate disk space affected: $(human_size "$total_bytes")"
+}
+
+# -----------------------------------------------------------------------------
+# Main workflow
+# -----------------------------------------------------------------------------
+main() {
+    cleanup_homebrew
+    cleanup_package_caches
+    cleanup_editor_caches
+    cleanup_shell_history
+    cleanup_docker
+    cleanup_tmp_dirs
+    cleanup_old_logs
+    cleanup_full
+    display_summary
+}
+
+main
+
+log "🎉 Developer environment cleanup complete!"

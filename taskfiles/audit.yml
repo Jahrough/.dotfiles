@@ -1,0 +1,15 @@
+version: '3'
+
+# =============================================================================
+# Audit
+# =============================================================================
+
+tasks:  
+  audit:full
+    desc: Full audit workflow
+    deps:
+      - audit:environment       # Core environment checks
+      - audit:security          # Secrets, SSH, permissions
+      - audit:compliance        # System / Homebrew compliance
+      - audit:history           # Compare against previous audits
+      - audit:report            # Generate final report

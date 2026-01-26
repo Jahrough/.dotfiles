@@ -1,0 +1,132 @@
+#!/usr/bin/env bash
+# =============================================================================
+# fzf.sh
+# Functional, idempotent fzf installer
+# Fully XDG-compliant, multi-shell, retry & logging support
+# -----------------------------------------------------------------------------
+# This script installs fzf on macOS (or Linux with Homebrew), sets up shell
+# keybindings/completions, and ensures idempotency.
+# It uses functional programming principles: pure functions, composable workflow.
+# Logging and retry mechanisms are included.
+# =============================================================================
+
+set -euo pipefail
+
+# -----------------------------------------------------------------------------
+# Environment defaults
+# -----------------------------------------------------------------------------
+: "${DOTFILES_ROOT:?DOTFILES_ROOT must be set}"     # Base dotfiles path
+: "${VERBOSE:=true}"                               # Verbose logging
+: "${DRY_RUN:=false}"                              # DRY_RUN mode flag
+: "${XDG_CONFIG_HOME:=$HOME/.config}"             # XDG config dir
+: "${XDG_STATE_HOME:=$HOME/.local/state}"         # XDG state dir
+: "${FZF_RETRIES:=3}"                              # Number of retry attempts for installation
+: "${FZF_RETRY_DELAY:=5}"                          # Delay between retries in seconds
+
+# Log directory and file
+readonly LOG_DIR="$XDG_STATE_HOME/logs"
+readonly LOG_FILE="$LOG_DIR/install/fzf.log"
+mkdir -p "$LOG_DIR"
+
+# -----------------------------------------------------------------------------
+# Include helper functions
+# -----------------------------------------------------------------------------
+# log.sh provides: log(), log_warn(), log_error(), log_debug()
+# run.sh provides: run()
+source "$DOTFILES_ROOT/lib/log.sh"
+source "$DOTFILES_ROOT/lib/run.sh"
+
+# Warn if running in DRY_RUN mode
+[ "$DRY_RUN" = true ] && log_warn "⚡ DRY_RUN mode active: no commands will be executed"
+
+log "🚀 Starting fzf installation..."
+
+# -----------------------------------------------------------------------------
+# Pure helper functions
+# -----------------------------------------------------------------------------
+
+# Check if a command exists
+check_command() {
+    local cmd="$1"
+    command -v "$cmd" >/dev/null 2>&1
+}
+
+# Install fzf using Homebrew with retries
+install_fzf_brew() {
+    # Skip if already installed
+    if check_command fzf; then
+        log "✅ fzf already installed, skipping..."
+        return 0
+    fi
+
+    # Ensure Homebrew is available
+    if ! check_command brew; then
+        log_error "Homebrew not found. Please install Homebrew first."
+        return 1
+    fi
+
+    log "📦 Installing fzf via Homebrew..."
+    local attempt
+    for attempt in $(seq 1 "$FZF_RETRIES"); do
+        if run "brew install fzf attempt $attempt" brew install fzf; then
+            log "✅ fzf installed successfully"
+            return 0
+        else
+            log_warn "Retry $attempt/$FZF_RETRIES failed, waiting $FZF_RETRY_DELAY s..."
+            [ "$DRY_RUN" = true ] || sleep "$FZF_RETRY_DELAY"
+        fi
+    done
+
+    log_warn "⚠️ Failed to install fzf after $FZF_RETRIES attempts"
+    return 1
+}
+
+# Install shell keybindings and completion scripts
+install_fzf_keybindings() {
+    local FZF_DIR
+    FZF_DIR="$(brew --prefix)/opt/fzf"
+
+    if [[ -d "$FZF_DIR" ]]; then
+        log "🔧 Installing fzf keybindings and completions..."
+        # `--all` installs all supported shells, `--no-bash --no-fish` disables specific shells if desired
+        run "Install fzf keybindings" yes | "$FZF_DIR/install" --all --no-bash --no-fish
+    else
+        log_warn "fzf installation directory not found at $FZF_DIR, skipping keybindings/completions"
+    fi
+}
+
+# Ensure shell RC files source fzf keybindings (idempotent)
+configure_shell_rc() {
+    # Map shell names to their RC/config files
+    declare -A SHELL_RC_MAP=(
+        [bash]="$HOME/.bashrc"
+        [zsh]="$HOME/.zshrc"
+        [fish]="$HOME/.config/fish/config.fish"
+    )
+
+    local shell_name rc_file
+    local fzf_prefix
+    fzf_prefix="$(brew --prefix)/opt/fzf"
+
+    # Add fzf initialization to each shell RC file if not already present
+    for shell_name in "${!SHELL_RC_MAP[@]}"; do
+        rc_file="${SHELL_RC_MAP[$shell_name]}"
+        if [[ -f "$rc_file" ]] && ! grep -q 'fzf' "$rc_file"; then
+            log "🔧 Adding fzf keybindings to $rc_file..."
+            run "Add fzf init to $rc_file" bash -c \
+                "echo '[ -f $fzf_prefix/shell/key-bindings.$shell_name ] && source $fzf_prefix/shell/key-bindings.$shell_name' >> '$rc_file'"
+        fi
+    done
+}
+
+# -----------------------------------------------------------------------------
+# Main workflow (composable and functional)
+# -----------------------------------------------------------------------------
+main() {
+    install_fzf_brew && install_fzf_keybindings && configure_shell_rc
+}
+
+# Execute the main workflow
+main
+
+log "🎉 fzf installation complete"

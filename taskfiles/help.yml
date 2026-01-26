@@ -1,0 +1,32 @@
+version: '3'
+
+# =============================================================================
+# Help
+# =============================================================================
+
+tasks:
+
+  help:
+    desc: "Show common workflows and tab-completion hints"
+    cmds:
+      - |
+        cat <<EOF
+        Common commands:
+          task setup             → Full setup
+          task update            → Update everything
+          task check             → Health checks only
+          task cleanup           → Clean caches
+
+        Namespaced tasks (tab completion):
+          task install:<tab>
+          task update:<tab>
+          task check:<tab>
+
+        Profiles:
+          task up profile=base
+          task up profile=work
+          task up profile=ci
+
+        Logs:
+          {{.log_file}}
+        EOF

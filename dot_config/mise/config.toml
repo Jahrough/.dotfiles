@@ -1,0 +1,133 @@
+# ~/.config/mise/config.toml
+# --------------------------
+# Mise version manager configuration
+# Fully XDG-compliant, pinned versions, verification hooks, and profiles
+
+[settings]
+data_dir = "${XDG_DATA_HOME:-$HOME/.local/share}/mise"
+config_dir = "${XDG_CONFIG_HOME:-$HOME/.config}/mise"
+log_dir = "${XDG_STATE_HOME:-$HOME/.local/state}/mise/logs"
+
+auto_switch = true
+default_shell_init = true
+path_priority = "prepend"   # Ensure all mise binaries take precedence
+
+[profiles]
+# Profiles allow optional runtime sets
+default = ["node", "python", "go", "java", "csharp", "ruby", "php", "rust", "scala", "kotlin", "typescript", "perl"]
+dev = ["node", "python", "go", "java", "csharp", "ruby", "php", "rust", "scala", "kotlin", "typescript", "perl", "terraform", "kubectl"]
+minimal = ["node", "python", "go"]  # Lightweight profile for CI or quick setup
+
+# --------------------------
+# Runtimes and Versions
+# --------------------------
+
+[node]
+versions = ["20.5.1", "18.18.0"]
+default = "20.5.1"
+verify_cmd = "node --version"
+path_priority = "prepend"
+
+[typescript]
+versions = ["5.3.1", "5.2.2"]
+default = "5.3.1"
+verify_cmd = "tsc --version"
+path_priority = "prepend"
+
+[python]
+versions = ["3.12.2", "3.11.7"]
+default = "3.12.2"
+venv_path = "${XDG_DATA_HOME:-$HOME/.local/share}/mise/venvs"
+verify_cmd = "python --version && pip --version"
+path_priority = "prepend"
+
+[ruby]
+versions = ["3.3.2", "3.2.2"]
+default = "3.3.2"
+verify_cmd = "ruby --version && gem --version"
+path_priority = "prepend"
+
+[php]
+versions = ["8.3.0", "8.2.12"]
+default = "8.3.0"
+verify_cmd = "php --version && composer --version"
+path_priority = "prepend"
+
+[go]
+versions = ["1.21.2", "1.20.8"]
+default = "1.21.2"
+gopath = "${XDG_DATA_HOME:-$HOME/.local/share}/go"
+modcache = "${XDG_DATA_HOME:-$HOME/.local/share}/go/pkg/mod"
+verify_cmd = "go version"
+path_priority = "prepend"
+
+[java]
+versions = ["21.0.2", "20.0.2"]
+default = "21.0.2"
+verify_cmd = "java -version && javac -version"
+path_priority = "prepend"
+
+[csharp]
+versions = ["12.0.0", "11.0.0"]
+default = "12.0.0"
+verify_cmd = "dotnet --list-sdks"
+path_priority = "prepend"
+
+[rust]
+versions = ["1.79.0", "1.78.0"]
+default = "1.79.0"
+verify_cmd = "rustc --version && cargo --version"
+path_priority = "prepend"
+
+[scala]
+versions = ["3.3.0", "2.13.12"]
+default = "3.3.0"
+verify_cmd = "scala -version && sbt sbtVersion"
+path_priority = "prepend"
+
+[kotlin]
+versions = ["1.9.0", "1.8.22"]
+default = "1.9.0"
+verify_cmd = "kotlinc -version"
+path_priority = "prepend"
+
+[perl]
+versions = ["5.40.0", "5.38.0"]
+default = "5.40.0"
+verify_cmd = "perl -v"
+path_priority = "prepend"
+
+[terraform]
+versions = ["1.7.6", "1.6.8"]
+default = "1.7.6"
+verify_cmd = "terraform -version"
+path_priority = "prepend"
+
+[kubectl]
+versions = ["1.29.5", "1.28.10"]
+default = "1.29.5"
+verify_cmd = "kubectl version --client"
+path_priority = "prepend"
+
+# --------------------------
+# Optional machine profile hooks
+# --------------------------
+[hooks]
+# post-install commands per runtime
+[node]
+post_install = ["npm install -g yarn"]
+
+[python]
+post_install = ["pip install --upgrade pip setuptools wheel"]
+
+[ruby]
+post_install = ["gem update --system"]
+
+[php]
+post_install = ["composer self-update"]
+
+[go]
+post_install = ["go install golang.org/x/tools/cmd/goimports@latest"]
+
+[rust]
+post_install = ["cargo install cargo-edit"]

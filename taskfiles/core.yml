@@ -1,0 +1,68 @@
+version: "3"
+
+# =============================================================================
+# Core / Environment Tasks
+# =============================================================================
+tasks:
+
+  init:
+    desc: "Initialize core environment variables, helpers, and directories"
+    cmds:
+      - echo "=== Core Init Start ===" | tee -a "{{.log_file}}"
+      - echo "OS detected: {{.OS}}" | tee -a "{{.log_file}}"
+      - echo "XDG_CONFIG_HOME: {{.XDG_CONFIG_HOME}}" | tee -a "{{.log_file}}"
+      - echo "XDG_STATE_HOME: {{.XDG_STATE_HOME}}" | tee -a "{{.log_file}}"
+      - echo "Module directory: {{.MODULE_DIR}}" | tee -a "{{.log_file}}"
+      - echo "Profile loaded: {{.profile}}" | tee -a "{{.log_file}}"
+      - mkdir -p "{{.XDG_CONFIG_HOME}}" "{{.XDG_DATA_HOME}}" "{{.XDG_STATE_HOME}}" "{{.XDG_CACHE_HOME}}" "{{.DOTFILES_BIN}}" "{{.DOTFILES_LIB}}"
+      - echo "Directories ensured." | tee -a "{{.log_file}}"
+      - echo "=== Core Init Complete ===" | tee -a "{{.log_file}}"
+
+  ensure_dirs:
+    desc: "Ensure all essential directories exist"
+    cmds:
+      - echo "Ensuring all essential directories..." | tee -a "{{.log_file}}"
+      - mkdir -p "{{.XDG_CONFIG_HOME}}" "{{.XDG_DATA_HOME}}" "{{.XDG_STATE_HOME}}" "{{.XDG_CACHE_HOME}}" "{{.DOTFILES_BIN}}" "{{.DOTFILES_LIB}}"
+      - echo "Directories verified." | tee -a "{{.log_file}}"
+
+  check_dependencies:
+    desc: "Check core command dependencies (bash, git, task, etc.)"
+    cmds:
+      - echo "Checking essential commands..." | tee -a "{{.log_file}}"
+      - |
+        for cmd in bash git task; do
+          if ! command -v $cmd >/dev/null 2>&1; then
+            echo "❌ Missing command: $cmd" | tee -a "{{.log_file}}"
+          else
+            echo "✅ Found command: $cmd" | tee -a "{{.log_file}}"
+          fi
+        done
+
+  retry_wrapper:
+    desc: "Example task with retries (demonstrates retry logic)"
+    cmds:
+      - |
+        attempt=0
+        until [ $attempt -ge {{.retries}} ]
+        do
+          echo "Attempt $((attempt+1))..." | tee -a "{{.log_file}}"
+          {{ if .dry_run }}echo "Dry run: skipping actual command"{{ else }}echo "Run your command here"{{ end }}
+          if [ $? -eq 0 ]; then break; fi
+          attempt=$((attempt+1))
+          echo "Retrying in {{.retry_delay}} seconds..." | tee -a "{{.log_file}}"
+          sleep {{.retry_delay}}
+        done
+
+  show_env:
+    desc: "Print all core environment variables"
+    cmds:
+      - echo "=== Environment ===" | tee -a "{{.log_file}}"
+      - echo "OS: {{.OS}}" | tee -a "{{.log_file}}"
+      - echo "XDG_CONFIG_HOME: {{.XDG_CONFIG_HOME}}" | tee -a "{{.log_file}}"
+      - echo "XDG_DATA_HOME: {{.XDG_DATA_HOME}}" | tee -a "{{.log_file}}"
+      - echo "XDG_STATE_HOME: {{.XDG_STATE_HOME}}" | tee -a "{{.log_file}}"
+      - echo "XDG_CACHE_HOME: {{.XDG_CACHE_HOME}}" | tee -a "{{.log_file}}"
+      - echo "DOTFILES_BIN: {{.DOTFILES_BIN}}" | tee -a "{{.log_file}}"
+      - echo "DOTFILES_LIB: {{.DOTFILES_LIB}}" | tee -a "{{.log_file}}"
+      - echo "MODULE_DIR: {{.MODULE_DIR}}" | tee -a "{{.log_file}}"
+      - echo "Profile: {{.profile}}" | tee -a "{{.log_file}}"

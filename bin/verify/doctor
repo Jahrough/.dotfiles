@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+: "${XDG_CONFIG_HOME:=$HOME/.config}"
+: "${XDG_STATE_HOME:=$HOME/.local/state}"
+LOG_FILE="$XDG_STATE_HOME/logs/doctor.log"
+mkdir -p "$(dirname "$LOG_FILE")"
+
+FAIL=0
+
+echo "🔍 Checking XDG environment..."
+for var in XDG_CONFIG_HOME XDG_DATA_HOME XDG_STATE_HOME XDG_CACHE_HOME; do
+    if [ -z "${!var}" ]; then
+        echo "⚠️ $var not set"
+        FAIL=1
+    else
+        echo "✅ $var=${!var}"
+    fi
+done
+
+check_cmd() { 
+    command -v "$1" >/dev/null 2>&1 && echo "✅ $1 installed" || { echo "❌ $1 missing"; FAIL=1; }; 
+}
+
+check_path() { 
+    echo "$PATH" | grep -q "$1" && echo "✅ $1 in PATH" || echo "⚠️ $1 missing from PATH"; 
+}
+
+echo "🔍 Checking PATH..."
+check_path ".local/bin"
+
+echo "🔍 Checking tools..."
+for cmd in git brew chezmoi mise; do check_cmd $cmd; done
+
+echo "🔍 Checking runtimes..."
+for cmd in node python go; do check_cmd $cmd; done
+
+if command -v nvim >/dev/null 2>&1; then
+    nvim --headless +CheckHealth +qall || echo "⚠️ Neovim health issues"
+fi
+
+[ "{{.enable_vscode}}" = "true" ] && check_cmd code
+[ "{{.enable_starship}}" = "true" ] && check_cmd starship
+check_cmd fzf
+
+echo ""
+if [ "$FAIL" -eq 0 ]; then
+    echo "✅ Doctor check complete"
+else
+    echo "⚠️ Doctor check found issues"
+    exit 1
+fi

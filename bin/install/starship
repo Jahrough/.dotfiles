@@ -1,0 +1,104 @@
+#!/usr/bin/env bash
+# =============================================================================
+# install/starship.sh
+# Idempotent Starship prompt installation for macOS/Linux
+# Fully XDG-compliant, multi-shell, retry & logging support
+# =============================================================================
+
+set -euo pipefail
+
+# -----------------------------------------------------------------------------
+# Environment defaults
+# -----------------------------------------------------------------------------
+: "${DOTFILES_ROOT:?DOTFILES_ROOT must be set before sourcing this script}"
+: "${VERBOSE:=true}"
+: "${DRY_RUN:=false}"
+: "${DOTFILES_LOG:=$HOME/.local/state/dotfiles-setup.log}"
+: "${RETRIES:=3}"
+: "${RETRY_DELAY:=5}"
+: "${XDG_CONFIG_HOME:=$HOME/.config}"
+
+STARSHIP_CONFIG_DIR="$XDG_CONFIG_HOME/starship"
+CONFIG_FILE="$STARSHIP_CONFIG_DIR/starship.toml"
+SHELL_NAME=$(basename "$SHELL")
+
+# -----------------------------------------------------------------------------
+# Include helpers
+# -----------------------------------------------------------------------------
+source "$DOTFILES_ROOT/lib/log.sh"
+source "$DOTFILES_ROOT/lib/run.sh"
+
+log "🚀 Starting Starship installation..."
+
+# -----------------------------------------------------------------------------
+# Check Homebrew
+# -----------------------------------------------------------------------------
+if ! command -v brew &>/dev/null; then
+    log_error "Homebrew not found. Please install Homebrew first."
+    exit 1
+else
+    log_debug "Homebrew detected at $(command -v brew)"
+fi
+
+# -----------------------------------------------------------------------------
+# Install Starship with retries
+# -----------------------------------------------------------------------------
+install_starship() {
+    if command -v starship &>/dev/null; then
+        log "✅ Starship already installed, skipping..."
+        return
+    fi
+
+    log "📦 Installing Starship..."
+    local i
+    for i in $(seq 1 "$RETRIES"); do
+        if run "Install Starship (attempt $i)" brew install starship; then
+            log_debug "Starship install attempt $i succeeded"
+            break
+        else
+            log_warn "Retry $i failed, waiting $RETRY_DELAY seconds..."
+            sleep "$RETRY_DELAY"
+        fi
+    done
+}
+
+install_starship
+
+# -----------------------------------------------------------------------------
+# Ensure XDG config directory
+# -----------------------------------------------------------------------------
+mkdir -p "$STARSHIP_CONFIG_DIR"
+if [ ! -f "$CONFIG_FILE" ]; then
+    log "📝 Creating default starship.toml..."
+    run "Create starship.toml" tee "$CONFIG_FILE" >/dev/null <<EOF
+# Starship prompt configuration
+add_newline = true
+EOF
+else
+    log "ℹ️ starship.toml already exists, skipping creation."
+    log_debug "starship.toml path: $CONFIG_FILE"
+fi
+
+# -----------------------------------------------------------------------------
+# Configure shell init
+# -----------------------------------------------------------------------------
+declare -A SHELL_RC_MAP=(
+    [bash]="$HOME/.bashrc"
+    [zsh]="$HOME/.zshrc"
+    [fish]="$HOME/.config/fish/config.fish"
+)
+
+if [[ -v SHELL_RC_MAP["$SHELL_NAME"] ]]; then
+    SHELL_RC="${SHELL_RC_MAP[$SHELL_NAME]}"
+    if ! grep -q 'starship init' "$SHELL_RC"; then
+        log "🔧 Adding Starship initialization to $SHELL_RC..."
+        run "Add Starship init to $SHELL_RC" bash -c "echo 'eval \"\$(starship init $SHELL_NAME)\"' >> '$SHELL_RC'"
+    else
+        log "ℹ️ Starship initialization already present in $SHELL_RC"
+        log_debug "Shell init block found in $SHELL_RC"
+    fi
+else
+    log_warn "Unsupported shell: $SHELL_NAME. Please add 'eval \"\$(starship init $SHELL_NAME)\"' manually."
+fi
+
+log "🎉 Starship installation complete!"

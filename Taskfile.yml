@@ -1,0 +1,115 @@
+version: "3"
+
+# =============================================================================
+# Global Variables
+# =============================================================================
+vars:
+  # XDG-compliant directories
+  XDG_CONFIG_HOME: "{{env `XDG_CONFIG_HOME` | default `$HOME/.config`}}"
+  XDG_DATA_HOME: "{{env `XDG_DATA_HOME` | default `$HOME/.local/share`}}"
+  XDG_STATE_HOME: "{{env `XDG_STATE_HOME` | default `$HOME/.local/state`}}"
+  XDG_CACHE_HOME: "{{env `XDG_CACHE_HOME` | default `$HOME/.cache`}}"
+
+  # Dotfiles directories
+  DOTFILES_BIN: "{{.XDG_CONFIG_HOME}}/dotfiles/bin"
+  DOTFILES_LIB: "{{.XDG_CONFIG_HOME}}/dotfiles/lib"
+
+  # Modular Taskfiles directory
+  MODULE_DIR: "./taskfiles"
+
+  # OS info (detected by Task)
+  OS: "{{OS}}"
+
+  # Execution flags
+  dry_run: "{{.dry_run | default `false`}}"
+  verbose: "{{.verbose | default `true`}}"
+  DRY_RUN_FLAG: "{{if .dry_run}}--dry-run{{end}}"
+
+  # Logging
+  log_file: "{{.XDG_STATE_HOME}}/dotfiles-init.log"
+
+  # Retry settings
+  retries: 3
+  retry_delay: 5
+
+  # -------------------------
+  # Automatic profile detection
+  # -------------------------
+  profile: >-
+    {{ if .profile }}
+      {{ .profile }}
+    {{ else if fileExists (joinPath .XDG_CONFIG_HOME "dotfiles/.env") }}
+      {{ readFile (joinPath .XDG_CONFIG_HOME "dotfiles/.env") | trim }}
+    {{ else if eq .chezmoi.hostname "work-laptop" }}
+      work
+    {{ else if eq .chezmoi.hostname "ci-server" }}
+      ci
+    {{ else }}
+      base
+    {{ end }}
+
+# =============================================================================
+# Modular Taskfile Includes
+# =============================================================================
+includes:
+  core:     "{{.MODULE_DIR}}/core.yml"
+  health:   "{{.MODULE_DIR}}/health.yml"
+  profile:  "{{.MODULE_DIR}}/profile.yml"
+  aliases:  "{{.MODULE_DIR}}/aliases.yml"
+  install:  "{{.MODULE_DIR}}/install.yml"
+  update:   "{{.MODULE_DIR}}/update.yml"
+  init:     "{{.MODULE_DIR}}/init.yml"
+  cleanup:  "{{.MODULE_DIR}}/cleanup.yml"
+  help:     "{{.MODULE_DIR}}/help.yml"
+  verify:   "{{.MODULE_DIR}}/verify.yml"
+
+# =============================================================================
+# Root Tasks (Orchestration)
+# =============================================================================
+tasks:
+  # Full setup workflow
+  setup:
+    desc: "Full developer machine setup"
+    deps:
+      - health:preflight
+      - profile:apply
+      - install:all
+      - update:all
+      - cleanup:temp
+      - verify:system
+
+  # Minimal bootstrap
+  bootstrap:
+    desc: "Bootstrap machine from scratch"
+    deps:
+      - core:init
+      - init:all
+      - verify:system
+
+  # Update installed tools
+  update:
+    desc: "Update installed tools and runtimes"
+    deps:
+      - update:all
+      - verify:system
+
+  # System health checks
+  doctor:
+    desc: "Check system health and prerequisites"
+    deps:
+      - health:preflight
+      - health:diagnostics
+
+  # Help / documentation
+  help:
+    desc: "Show project-specific help and workflow guidance"
+    deps:
+      - help:usage
+      - help:tasks
+
+  # Cleanup caches / temp files
+  cleanup:
+    desc: "Clean temporary files and caches"
+    deps:
+      - cleanup:temp
+      - cleanup:logs

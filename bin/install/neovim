@@ -1,0 +1,122 @@
+#!/usr/bin/env bash
+# =============================================================================
+# neovim.sh
+# Functional, idempotent Neovim setup: config symlink, vim-plug, plugins
+# Fully XDG-compliant, retry & logging support
+# =============================================================================
+
+set -euo pipefail  # Strict mode: exit on errors, unset vars, or failed pipelines
+
+# -----------------------------------------------------------------------------
+# Environment defaults
+# -----------------------------------------------------------------------------
+# Require DOTFILES_ROOT to locate helper scripts and dotfiles
+: "${DOTFILES_ROOT:?DOTFILES_ROOT must be set}"
+: "${VERBOSE:=true}"                  # Enable/disable console output
+: "${DRY_RUN:=false}"                 # If true, commands are only printed, not executed
+: "${XDG_CONFIG_HOME:=$HOME/.config}" # XDG config directory
+: "${XDG_DATA_HOME:=$HOME/.local/share}" # XDG data directory
+: "${XDG_STATE_HOME:=$HOME/.local/state}" # XDG state directory
+: "${PLUGIN_RETRIES:=3}"              # Retry attempts for plugin installation
+: "${PLUGIN_RETRY_DELAY:=5}"          # Delay (seconds) between plugin install retries
+
+# Immutable paths
+readonly NVIM_DIR="$XDG_CONFIG_HOME/nvim"             # Neovim config directory
+readonly DOTFILES="$XDG_CONFIG_HOME/dotfiles"         # Local dotfiles repo
+readonly LOG_DIR="$XDG_STATE_HOME/logs"               # Log directory
+readonly LOG_FILE="$LOG_DIR/install/nvim.log"         # Log file path
+readonly PLUG_PATH="$XDG_DATA_HOME/nvim/site/autoload/plug.vim" # vim-plug path
+
+# Ensure required directories exist
+mkdir -p "$NVIM_DIR" "$LOG_DIR" "$XDG_DATA_HOME/nvim/site/autoload"
+
+# -----------------------------------------------------------------------------
+# Include helpers
+# -----------------------------------------------------------------------------
+source "$DOTFILES_ROOT/lib/log.sh"       # Logging functions: log, log_warn, log_debug
+source "$DOTFILES_ROOT/lib/run.sh" # Wrapper to respect DRY_RUN
+
+# Notify if DRY_RUN mode is active
+[ "$DRY_RUN" = true ] && log_warn "⚡ DRY_RUN mode active: no commands will be executed"
+
+log "🚀 Starting Neovim setup..."
+
+# -----------------------------------------------------------------------------
+# Pure functions
+# -----------------------------------------------------------------------------
+
+# Symlink init.vim from dotfiles into NVIM_DIR
+symlink_init() {
+    run "Symlink init.vim" ln -sf "$DOTFILES/nvim/init.vim" "$NVIM_DIR/init.vim"
+}
+
+# Check if a command exists on the system
+check_command() {
+    local cmd="$1"
+    command -v "$cmd" >/dev/null 2>&1
+}
+
+# Download vim-plug if not already installed
+download_vimplug() {
+    if ! check_command curl; then
+        log_warn "curl not found, cannot install vim-plug"
+        return 1
+    elif [ ! -f "$PLUG_PATH" ]; then
+        log "📦 Installing vim-plug..."
+        run "Download vim-plug" curl -fLo "$PLUG_PATH" --create-dirs \
+            https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
+    else
+        log_debug "vim-plug already installed at $PLUG_PATH"
+    fi
+}
+
+# Install Neovim plugins with retries
+install_plugins() {
+    log "📦 Installing Neovim plugins..."
+    for attempt in $(seq 1 "$PLUGIN_RETRIES"); do
+        if run "PlugInstall attempt $attempt" nvim --headless +PlugInstall +qall; then
+            log "✅ Plugins installed successfully"
+            return 0
+        else
+            log_warn "Plugin install attempt $attempt failed, retrying in $PLUGIN_RETRY_DELAY s..."
+            [ "$DRY_RUN" = true ] || sleep "$PLUGIN_RETRY_DELAY"
+        fi
+    done
+    log_warn "⚠️ Failed to install plugins after $PLUGIN_RETRIES attempts"
+}
+
+# Run Neovim CheckHealth for diagnostics
+check_health() {
+    log "🔍 Running Neovim health check..."
+    if ! run "CheckHealth" nvim --headless +CheckHealth +qall; then
+        log_warn "CheckHealth reported issues, see Neovim logs"
+    fi
+}
+
+# -----------------------------------------------------------------------------
+# Main workflow (composable, functional style)
+# -----------------------------------------------------------------------------
+main() {
+    # Symlink config
+    symlink_init
+
+    # Skip plugin installation if Neovim CLI not present
+    if ! check_command nvim; then
+        log_warn "Neovim CLI not found, skipping plugin installation"
+        return
+    fi
+
+    # Ensure vim-plug is installed
+    download_vimplug
+
+    # Install all plugins with retry logic
+    install_plugins
+
+    # Run health check for diagnostics
+    check_health
+}
+
+# Run main workflow
+main
+
+log "🎉 Neovim setup complete"

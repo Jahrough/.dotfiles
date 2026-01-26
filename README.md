@@ -1,1 +1,1 @@
-🚀 Quick Start
+Quick Start
